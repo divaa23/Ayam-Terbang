@@ -1,0 +1,175 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+# --- Bagian 1: Logika Perhitungan ---
+def hitung_bmr(jenis_kelamin, usia, berat_badan, tinggi_badan):
+    """Fungsi untuk menghitung Basal Metabolic Rate (BMR) menggunakan rumus Harris-Benedict."""
+    # BMR adalah jumlah kalori yang dibakar tubuh saat istirahat total.
+    
+    # 1. Pastikan input adalah angka (konversi dari string input GUI)
+    try:
+        usia = int(usia)
+        berat = float(berat_badan)
+        tinggi = float(tinggi_badan)
+    except ValueError:
+        # Jika konversi gagal, kembalikan nilai 0 dan tampilkan pesan error
+        return 0
+    
+    # 2. Rumus BMR (Harris-Benedict)
+    if jenis_kelamin == "Pria":
+        # Rumus Pria: (10 x BB dalam kg) + (6.25 x TB dalam cm) - (5 x Usia dalam tahun) + 5
+        bmr = (10 * berat) + (6.25 * tinggi) - (5 * usia) + 5
+    elif jenis_kelamin == "Wanita":
+        # Rumus Wanita: (10 x BB dalam kg) + (6.25 x TB dalam cm) - (5 x Usia dalam tahun) - 161
+        bmr = (10 * berat) + (6.25 * tinggi) - (5 * usia) - 161
+    else:
+        # Jika jenis kelamin tidak terdefinisi (seharusnya tidak terjadi di aplikasi ini)
+        bmr = 0
+        
+    return round(bmr, 2)
+
+def hitung_langkah_ideal(bmr):
+    """Fungsi untuk menghitung Langkah Harian Ideal."""
+    
+    # 1. Tentukan Tingkat Aktivitas (Asumsi: Aktivitas Ringan/Sedang)
+    # Faktor aktivitas fisik (PAL - Physical Activity Level)
+    # Angka 1.55 adalah faktor umum untuk aktivitas sedang (berdiri, berjalan santai)
+    TEE = bmr * 1.55 
+    
+    # 2. Defisit Kalori dan Kalori Target
+    # Untuk mencapai kesehatan ideal/menjaga berat badan, tubuh perlu membakar kalori tambahan.
+    # Asumsi: Defisit/Pembakaran tambahan yang disarankan melalui lari/jalan adalah 300 Kkal.
+    TARGET_CALORIES = TEE + 300 # Total Kalori Harian yang harus dibakar
+
+    # 3. Konversi Kalori ke Langkah
+    # Asumsi sederhana: 1 langkah membakar sekitar 0.04 - 0.05 kkal (tergantung berat badan dan kecepatan).
+    # Kita ambil rata-rata 0.05 kkal per langkah.
+    KALORI_PER_LANGKAH = 0.05
+    
+    # Kebutuhan langkah harian minimum (tanpa menghitung lari/olahraga)
+    # Asumsi: 1000 kkal TEE didapat dari 10.000 langkah harian (0.1 kkal/langkah)
+    LANGKAH_MINIMUM = 10000 
+    
+    # Langkah Tambahan yang dibutuhkan dari olahraga (defisit 300 kkal)
+    LANGKAH_TAMBAHAN = 300 / KALORI_PER_LANGKAH # 300 / 0.05 = 6000 langkah
+    
+    # Total langkah ideal
+    langkah_ideal = LANGKAH_MINIMUM + LANGKAH_TAMBAHAN # 10.000 + 6.000 = 16.000 langkah
+    
+    # Catatan: Perhitungan ini disederhanakan untuk tujuan edukasi anak SD.
+    # Untuk hasil yang lebih akurat, perlu variabel kecepatan lari/jalan dan faktor lainnya.
+    
+    return langkah_ideal
+
+# --- Bagian 2: Fungsi Aksi Tombol (Mengambil Input dan Menampilkan Hasil) ---
+def tampilkan_hasil():
+    """Fungsi yang dipanggil saat tombol 'Hitung' diklik."""
+    
+    # 1. Ambil Nilai dari Input
+    jk = var_jenis_kelamin.get()       # Ambil nilai dari Combobox (Dropdown) Jenis Kelamin
+    usia = entry_usia.get()            # Ambil nilai dari Entry Usia
+    berat = entry_berat_badan.get()    # Ambil nilai dari Entry Berat Badan
+    tinggi = entry_tinggi_badan.get()  # Ambil nilai dari Entry Tinggi Badan
+    
+    # 2. Validasi Input
+    if not all([jk, usia, berat, tinggi]):
+        # Cek apakah ada input yang kosong
+        messagebox.showerror("Error", "Semua kolom harus diisi!")
+        return
+    
+    try:
+        # Cek apakah Usia, Berat, dan Tinggi adalah angka yang valid
+        int(usia)
+        float(berat)
+        float(tinggi)
+    except ValueError:
+        messagebox.showerror("Error", "Usia, Berat, dan Tinggi harus berupa angka!")
+        return
+
+    # 3. Lakukan Perhitungan
+    bmr_hasil = hitung_bmr(jk, usia, berat, tinggi)
+    
+    # Asumsi game ini ditujukan untuk anak SD, kita berikan rentang angka yang menarik/mudah diingat.
+    # Namun, karena BMR dihitung berdasarkan data nyata, kita gunakan hasil BMR untuk edukasi.
+    
+    langkah_ideal_hasil = hitung_langkah_ideal(bmr_hasil)
+
+    # 4. Tampilkan Hasil
+    # Bersihkan area hasil (jika ada hasil sebelumnya)
+    for widget in frame_hasil.winfo_children():
+        widget.destroy()
+        
+    # Tampilkan BMR
+    label_bmr = tk.Label(frame_hasil, text=f"BMR (Kalori Dasar) Anda: {bmr_hasil:.0f} Kkal", bg='lightyellow', font=('Helvetica', 12, 'bold'))
+    label_bmr.pack(pady=5)
+    
+    # Tampilkan Interpretasi BMR
+    label_bmr_detail = tk.Label(frame_hasil, text="(*Kebutuhan kalori saat istirahat total)", bg='lightyellow', font=('Helvetica', 10))
+    label_bmr_detail.pack()
+
+    # Tampilkan Langkah Ideal (Hasil Utama)
+    label_langkah = tk.Label(frame_hasil, text=f"✨ Langkah Harian Ideal (Jalan/Lari):", bg='lightcoral', fg='white', font=('Helvetica', 14, 'bold'))
+    label_langkah.pack(pady=10)
+    
+    langkah_text = f"{langkah_ideal_hasil:.0f} Langkah"
+    
+    # Tampilkan hasil langkah dengan ukuran font lebih besar
+    label_langkah_value = tk.Label(frame_hasil, text=langkah_text, bg='lightcoral', fg='white', font=('Helvetica', 20, 'bold'))
+    label_langkah_value.pack()
+
+    # Pesan edukasi
+    label_edukasi = tk.Label(frame_hasil, text="Ayo bergerak! Rutin jalan/lari bikin badan sehat dan hati senang! 😊", bg='lightcoral', fg='white', font=('Helvetica', 10, 'italic'))
+    label_edukasi.pack(pady=5)
+
+
+# --- Bagian 3: Setup GUI (Tkinter) ---
+
+# 1. Inisialisasi Jendela Utama
+root = tk.Tk() # Membuat objek jendela utama
+root.title("Kalkulator Langkah Sehat") # Memberi judul pada jendela
+root.geometry("450x550") # Mengatur ukuran jendela (lebar x tinggi)
+root.config(bg='#b3e5fc') # Mengatur warna latar belakang jendela (biru muda cerah)
+
+# Judul Aplikasi
+label_title = tk.Label(root, text="Aplikasi Sehat! 💪", font=('Comic Sans MS', 18, 'bold'), bg='#01579b', fg='white', padx=10, pady=10)
+label_title.pack(pady=15, padx=10, fill='x') # Menampilkan label judul di jendela
+
+# --- Frame Input ---
+frame_input = tk.Frame(root, bg='#e1f5fe', padx=10, pady=10) # Membuat frame untuk inputan (latar belakang putih kebiruan)
+frame_input.pack(pady=5, padx=20, fill='x') # Menampilkan frame input
+
+# 2. Input Jenis Kelamin (Dropdown/Combobox)
+tk.Label(frame_input, text="Jenis Kelamin:", bg='#e1f5fe', font=('Helvetica', 11)).grid(row=0, column=0, sticky='w', pady=5) # Label
+var_jenis_kelamin = tk.StringVar() # Variabel untuk menyimpan nilai Combobox
+combobox_jk = ttk.Combobox(frame_input, textvariable=var_jenis_kelamin, values=["Pria", "Wanita"], state="readonly", font=('Helvetica', 11)) # Membuat Combobox (Dropdown)
+combobox_jk.grid(row=0, column=1, sticky='ew', padx=10) # Menempatkan Combobox
+combobox_jk.set("Pilih") # Set nilai awal
+
+# 3. Input Usia
+tk.Label(frame_input, text="Usia (Tahun):", bg='#e1f5fe', font=('Helvetica', 11)).grid(row=1, column=0, sticky='w', pady=5)
+entry_usia = tk.Entry(frame_input, font=('Helvetica', 11)) # Membuat kolom input teks
+entry_usia.grid(row=1, column=1, sticky='ew', padx=10) # Menempatkan kolom input
+
+# 4. Input Berat Badan
+tk.Label(frame_input, text="Berat Badan (Kg):", bg='#e1f5fe', font=('Helvetica', 11)).grid(row=2, column=0, sticky='w', pady=5)
+entry_berat_badan = tk.Entry(frame_input, font=('Helvetica', 11))
+entry_berat_badan.grid(row=2, column=1, sticky='ew', padx=10)
+
+# 5. Input Tinggi Badan
+tk.Label(frame_input, text="Tinggi Badan (Cm):", bg='#e1f5fe', font=('Helvetica', 11)).grid(row=3, column=0, sticky='w', pady=5)
+entry_tinggi_badan = tk.Entry(frame_input, font=('Helvetica', 11))
+entry_tinggi_badan.grid(row=3, column=1, sticky='ew', padx=10)
+
+# Konfigurasi kolom agar mengisi ruang (responsive)
+frame_input.grid_columnconfigure(1, weight=1) # Membuat kolom 1 (input) mengisi sisa ruang
+
+# 6. Tombol Hitung
+button_hitung = tk.Button(root, text="Hitung Langkah Ideal! 👟", command=tampilkan_hasil, bg='#ff8a65', fg='white', font=('Helvetica', 13, 'bold'), padx=10, pady=5)
+button_hitung.pack(pady=10, padx=20, fill='x')
+
+# --- Frame Hasil ---
+frame_hasil = tk.Frame(root, bg='lightcoral', padx=10, pady=10) # Frame tempat hasil ditampilkan (warna kontras)
+frame_hasil.pack(pady=5, padx=20, fill='x') # Menampilkan frame hasil
+
+# Mulai Loop Utama
+root.mainloop() # Baris ini membuat jendela tetap terbuka dan menunggu interaksi pengguna.
